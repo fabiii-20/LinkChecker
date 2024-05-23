@@ -3,7 +3,7 @@
     "name": "Link Status Checker",
     "version": "1.0",
     "description": "Check all links on a webpage for their status codes and other details.",
-    "permissions": ["activeTab", "scripting"],
+    "permissions": ["activeTab", "scripting","tabs"],
     "background": {
       "service_worker": "background.js"
     },

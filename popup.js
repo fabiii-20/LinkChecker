@@ -9,7 +9,20 @@ document.getElementById('doneButton').addEventListener('click', async () => {
     const checkBrokenLinks = document.getElementById('checkBrokenLinks').checked;
     const checkLocalLanguageLinks = document.getElementById('checkLocalLanguageLinks').checked;
     const checkAllDetails = document.getElementById('checkAllDetails').checked;
-  
+    
+  let countdownTime = 10; // Set countdown time in seconds
+  const countdownElement = document.getElementById('countdown');
+  countdownElement.textContent = `Time remaining: ${countdownTime} seconds`;
+
+  const countdownInterval = setInterval(() => {
+    countdownTime -= 1;
+    countdownElement.textContent = `Time remaining: ${countdownTime} seconds`;
+
+    if (countdownTime <= 0) {
+      clearInterval(countdownInterval);
+    }
+  }, 1000);
+
     try {
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -19,8 +32,11 @@ document.getElementById('doneButton').addEventListener('click', async () => {
   
       // Store results in localStorage for later use by the preview button
       localStorage.setItem('linkResults', JSON.stringify(results[0].result));
+      clearInterval(countdownInterval);
       alert('Completed');
     } catch (error) {
+      clearInterval(countdownInterval);
+      countdownElement.textContent='completed';
       console.error(error);
       alert('An error occurred while checking links.');
     }
