@@ -84,7 +84,7 @@ document.getElementById('doneButton').addEventListener('click', async () => {
   function displayBrokenLinks(links) {
     let html = '<table><tr><th>Link</th><th>Status</th></tr>';
     links.forEach(link => {
-      html += `<tr><td>${link.url}</td><td>${link.status}</td></tr>`;
+      html += `<tr><td>${highlightPercent20(link.url)}</td><td>${link.status}</td></tr>`;
     });
     html += '</table>';
     document.getElementById('brokenLinksTable').innerHTML = html;
@@ -112,6 +112,10 @@ document.getElementById('doneButton').addEventListener('click', async () => {
     }
     return 'unknown';
 }
+
+function highlightPercent20(url) {
+  return url.replace(/%20/g, '<span style="color: red;">%20</span>');
+}
   
   async function checkLinks(checkAllLinks, checkBrokenLinks, checkLocalLanguageLinks, checkAllDetails) {
     const allLinks = [];
@@ -129,7 +133,7 @@ document.getElementById('doneButton').addEventListener('click', async () => {
         const response = await fetch(url);
         const status = response.status;
         if (checkAllLinks || checkAllDetails) allLinks.push({ url, status });
-        if ((checkBrokenLinks || checkAllDetails) && (status >= 400)) brokenLinks.push({ url, status });
+        if ((checkBrokenLinks || checkAllDetails) && (status == 400 || status == 404 || status==410 || url.includes('%20'))) brokenLinks.push({ url, status });
         if ((checkLocalLanguageLinks || checkAllDetails) && localLanguageList.some(language => url.includes(language))) {
           localLanguageLinks.push({ url });
         }
