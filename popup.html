@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Link Status Checker</title>
+  <link rel="stylesheet" href="style.css">
   <style>
     body { font-family: Arial, sans-serif; }
     .container { margin: 15px; }
@@ -12,9 +13,18 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Link Status Checker</h1>
-    <form id="optionsForm">
+  <div id="header">
+    <img id="icon" src="icon.png" alt="image of url">
+    <h2>Link Status Checker</h2>
+  </div>
+  <div id="initial-view">
+    <div id="check-list">
+      <div class="checkbox-container">
+        <i class="fas fas-link"></i>
+        
+
+      </div>
+    </div>    <form id="optionsForm">
       <label><input type="checkbox" id="checkAllLinks"> Check all links</label><br>
       <label><input type="checkbox" id="checkBrokenLinks"> Check broken links</label><br>
       <label><input type="checkbox" id="checkLocalLanguageLinks"> Check local language links</label><br>
@@ -24,35 +34,36 @@
       <button type="button" id="downloadPdfButton">Download as PDF</button>
       <button type="button" id="downloadExcelButton">Download as Excel</button>
     </form>
+  </div>
     <div id="result" style="display:none;">
       <h2>Results</h2>
       <div id="allLinksTable">
-        <table>
+        <!-- <table>
             <tr>
               <th>Link</th>
               <th>Status</th>
             </tr>
-          </table>
+          </table> -->
       </div>
 
       <div id="brokenLinksTable">
-        <table>
+        <!-- <table>
             <tr>
               <th>Link</th>
               <th>Status</th>
             </tr>
-          </table>
+          </table> -->
       </div>
       <div id="localLanguageLinksTable">
         <table>
-            <tr>
+            <!-- <tr>
               <th>Link</th>
               <th>Status</th>
             </tr>
-          </table>
+          </table> -->
       </div>
     </div>
-  </div>
+  
   <script src="popup.js"></script>
   <script src="libs/jspdf.umd.min.js"></script>
   <script src="libs/jspdf.plugin.autotable.min.js"></script>
