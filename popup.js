@@ -91,9 +91,9 @@ document.getElementById('doneButton').addEventListener('click', async () => {
   }
   
   function displayLocalLanguageLinks(links) {
-    let html = '<table><tr><th>Link</th><th>Status</th></tr>';
+    let html = '<table><tr><th>Link</th><th>Language string</th></tr>';
     links.forEach(link => {
-      html += `<tr><td>${link.url}</td><td>${link.status}</td></tr>`;
+      html += `<tr><td>${link.url}</td><td></td></tr>`;
     });
     html += '</table>';
     document.getElementById('localLanguageLinksTable').innerHTML = html;
@@ -104,13 +104,9 @@ document.getElementById('doneButton').addEventListener('click', async () => {
     const brokenLinks = [];
     const localLanguageLinks = [];
     const localLanguageList = [
-      'ar-aa', 'be-by', 'bg-bg', 'ca-es', 'cs-cz', 'da-dk', 'de-ch', 'de-de', 'el-gr',
-      'en-au', 'en-be', 'en-gb', 'en-jp', 'en-us', 'en-za', 'es-es', 'fi-fi', 'fr-be',
-      'fr-ca', 'fr-ch', 'fr-fr', 'hr-hr', 'hu-hu', 'is-is', 'it-ch', 'it-it', 'iw-il',
-      'ja-jp', 'ko-kr', 'lt-lt', 'lv-lv', 'mk-mk', 'nl-be', 'nl-nl', 'no-no', 'pl-pl',
-      'pt-br', 'pt-pt', 'ro-ro', 'ru-ru', 'sh-sp', 'sk-sk', 'sl-sl', 'sq-al', 'sv-se',
-      'th-th', 'tr-tr', 'uk-ua', 'zh-cn', 'zh-tw'
-    ];
+    'en-us','en-au','en-ca','en-gb','en-hk','en-ie','en-in','en-my','en-nz','en-ph','en-sg','en-za','es-es',
+    'es-mx','fr-be','fr-ca','fr-fr','it-it','ko-kr','pt-br','de-de','ar-sa','da-dk','fi-fi','ja-jp','ja-jp',
+    'nb-no','nl-be','nl-nl','zh-ch'];
   
     const links = Array.from(document.querySelectorAll('a')).map(link => link.href);
     
@@ -121,7 +117,7 @@ document.getElementById('doneButton').addEventListener('click', async () => {
         if (checkAllLinks || checkAllDetails) allLinks.push({ url, status });
         if ((checkBrokenLinks || checkAllDetails) && (status >= 400)) brokenLinks.push({ url, status });
         if ((checkLocalLanguageLinks || checkAllDetails) && localLanguageList.some(language => url.includes(language))) {
-          localLanguageLinks.push({ url, status });
+          localLanguageLinks.push({ url });
         }
       } catch (error) {
         if (checkBrokenLinks || checkAllDetails) brokenLinks.push({ url, status: 'error' });
