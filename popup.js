@@ -93,11 +93,25 @@ document.getElementById('doneButton').addEventListener('click', async () => {
   function displayLocalLanguageLinks(links) {
     let html = '<table><tr><th>Link</th><th>Language string</th></tr>';
     links.forEach(link => {
-      html += `<tr><td>${link.url}</td><td></td></tr>`;
+      html += `<tr><td>${link.url}</td><td>${getLocalLanguageString(link.url)}</td></tr>`;
     });
     html += '</table>';
     document.getElementById('localLanguageLinksTable').innerHTML = html;
   }
+
+  function getLocalLanguageString(url) {
+    const localLanguageList = [
+        'en-us', 'en-au', 'en-ca', 'en-gb', 'en-hk', 'en-ie', 'en-in', 'en-my', 'en-nz', 'en-ph', 'en-sg', 'en-za', 'es-es',
+        'es-mx', 'fr-be', 'fr-ca', 'fr-fr', 'it-it', 'ko-kr', 'pt-br', 'de-de', 'ar-sa', 'da-dk', 'fi-fi', 'ja-jp', 'nb-no', 
+        'nl-be', 'nl-nl', 'zh-cn'
+    ];
+    for (const language of localLanguageList) {
+        if (url.includes(language)) {
+            return language;
+        }
+    }
+    return 'unknown';
+}
   
   async function checkLinks(checkAllLinks, checkBrokenLinks, checkLocalLanguageLinks, checkAllDetails) {
     const allLinks = [];
