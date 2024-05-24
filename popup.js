@@ -1,32 +1,19 @@
 document.getElementById('doneButton').addEventListener('click', async () => {
-  const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
-  if (tab.url.startsWith('chrome://')) {
-    alert('This extension cannot be run on chrome:// URLs.');
-    return;
-  }
-
   const checkAllLinks = document.getElementById('checkAllLinks').checked;
   const checkBrokenLinks = document.getElementById('checkBrokenLinks').checked;
   const checkLocalLanguageLinks = document.getElementById('checkLocalLanguageLinks').checked;
   const checkAllDetails = document.getElementById('checkAllDetails').checked;
 
   if (!checkAllLinks && !checkBrokenLinks && !checkLocalLanguageLinks && !checkAllDetails) {
-    alert('Please select at least one checkbox to continue.');
+    alert('Please check at least one checkbox.');
     return;
   }
-  
-// let countdownTime = 10000; // Set countdown time in seconds
-// const countdownElement = document.getElementById('countdown');
-// countdownElement.textContent = `Estimate time: ${countdownTime} seconds`;
 
-// const countdownInterval = setInterval(() => {
-//   countdownTime -= 1;
-//   countdownElement.textContent = `Time remaining: ${countdownTime} seconds`;
-
-//   if (countdownTime <= 0) {
-//     clearInterval(countdownInterval);
-//   }
-// }, 1000);
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab.url.startsWith('chrome://')) {
+    alert('This extension cannot be run on chrome:// URLs.');
+    return;
+  }
 
 let countdownTime = 300; // Set countdown time in seconds (5 minutes)
 const countdownElement = document.getElementById('countdown');
@@ -44,18 +31,24 @@ const countdownInterval = setInterval(() => {
 }, 1000);
 
   try {
-    const results = await chrome.scripting.executeScript({
+    const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: checkLinks,
       args: [checkAllLinks, checkBrokenLinks, checkLocalLanguageLinks, checkAllDetails]
     });
 
-    // Store results in localStorage for later use by the preview button
-    localStorage.setItem('linkResults', JSON.stringify(results[0].result));
-    clearInterval(countdownInterval);
-    countdownElement.textContent= 'Loading compeleted now you can download your files'
-    alert('Completed');
+    console.log('Link check result:', result); // Debugging
+
+    if (result) {
+      localStorage.setItem('linkResults', JSON.stringify(result));
+      clearInterval(countdownInterval);
+      countdownElement.textContent= 'Loading compeleted now you can download your files'
+      alert('Completed');
+    } else {
+      alert('No result returned from the link check.');
+    }
   } catch (error) {
+    //console.error('Error checking links:', error); // Debugging
     clearInterval(countdownInterval);
     countdownElement.textContent='';
     console.error(error);
@@ -68,7 +61,6 @@ function updateCountdown(element, time) {
   const seconds = time % 60;
   element.textContent = `Time remaining: ${minutes}m ${seconds}s`;
 }
-
 
 document.getElementById('previewButton').addEventListener('click', () => {
   const results = JSON.parse(localStorage.getItem('linkResults'));
@@ -86,36 +78,82 @@ document.getElementById('downloadPdfButton').addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
+  // Function to extract table data
+  function extractTableData(selector) {
+    const rows = Array.from(document.querySelectorAll(`${selector} tr`)).slice(1); // Skip the header row
+    return rows.map(row => {
+      return Array.from(row.cells).map(cell => cell.textContent);
+    });
+  }
+
+  // Adding "All Links" table to the PDF
   doc.text('All Links', 10, 10);
-  doc.autoTable({ html: '#allLinksTable', startY: 20 });
-  doc.addPage();
-  doc.text('Broken Links', 10, 10);
-  doc.autoTable({ html: '#brokenLinksTable', startY: 20 });
-  doc.addPage();
-  doc.text('Local Language Links', 10, 10);
-  doc.autoTable({ html: '#localLanguageLinksTable', startY: 20 });
+  doc.autoTable({
+    head: [['URL', 'Status']],
+    body: extractTableData('#allLinksTable'),
+    startY: 20
+  });
+
+  // Adding "Broken Links" table to the PDF
+  let lastY = doc.lastAutoTable.finalY + 10; // Get the Y position after the last table
+  doc.text('Broken Links', 10, lastY);
+  doc.autoTable({
+    head: [['URL', 'Status']],
+    body: extractTableData('#brokenLinksTable'),
+    startY: lastY + 10
+  });
+
+  // Adding "Local Language Links" table to the PDF
+  lastY = doc.lastAutoTable.finalY + 10; // Update the Y position again
+  doc.text('Local Language Links', 10, lastY);
+  doc.autoTable({
+    head: [['URL', 'Language String']],
+    body: extractTableData('#localLanguageLinksTable'),
+    startY: lastY + 10
+  });
 
   doc.save('links_report.pdf');
 });
 
+
 document.getElementById('downloadExcelButton').addEventListener('click', () => {
   const wb = XLSX.utils.book_new();
+  wb.Props = {
+    Title: "Link Report",
+    Subject: "Link Checker",
+    Author: "Your Name",
+    CreatedDate: new Date()
+  };
 
-  const allLinksTable = document.getElementById('allLinksTable');
-  const brokenLinksTable = document.getElementById('brokenLinksTable');
-  const localLanguageLinksTable = document.getElementById('localLanguageLinksTable');
+  // Convert all links to worksheet
+  const allLinksData = [["URL", "Status"]].concat(
+    Array.from(document.querySelectorAll('#allLinksTable tr')).map(row => {
+      return Array.from(row.cells).map(cell => cell.textContent);
+    })
+  );
+  const allLinksSheet = XLSX.utils.aoa_to_sheet(allLinksData);
+  XLSX.utils.book_append_sheet(wb, allLinksSheet, "All Links");
 
-  const allLinksSheet = XLSX.utils.table_to_sheet(allLinksTable);
-  const brokenLinksSheet = XLSX.utils.table_to_sheet(brokenLinksTable);
-  const localLanguageLinksSheet = XLSX.utils.table_to_sheet(localLanguageLinksTable);
+  // Convert broken links to worksheet
+  const brokenLinksData = [["URL", "Status"]].concat(
+    Array.from(document.querySelectorAll('#brokenLinksTable tr')).map(row => {
+      return Array.from(row.cells).map(cell => cell.textContent);
+    })
+  );
+  const brokenLinksSheet = XLSX.utils.aoa_to_sheet(brokenLinksData);
+  XLSX.utils.book_append_sheet(wb, brokenLinksSheet, "Broken Links");
 
-  XLSX.utils.book_append_sheet(wb, allLinksSheet, 'All Links');
-  XLSX.utils.book_append_sheet(wb, brokenLinksSheet, 'Broken Links');
-  XLSX.utils.book_append_sheet(wb, localLanguageLinksSheet, 'Local Language Links');
+  // Convert local language links to worksheet
+  const localLanguageLinksData = [["URL", "Language String"]].concat(
+    Array.from(document.querySelectorAll('#localLanguageLinksTable tr')).map(row => {
+      return Array.from(row.cells).map(cell => cell.textContent);
+    })
+  );
+  const localLanguageLinksSheet = XLSX.utils.aoa_to_sheet(localLanguageLinksData);
+  XLSX.utils.book_append_sheet(wb, localLanguageLinksSheet, "Local Language Links");
 
   XLSX.writeFile(wb, 'links_report.xlsx');
 });
-
 function displayAllLinks(links) {
   let html = '<table><tr><th>Link</th><th>Status</th></tr>';
   links.forEach(link => {
@@ -145,20 +183,20 @@ function displayLocalLanguageLinks(links) {
 
 function getLocalLanguageString(url) {
   const localLanguageList = [
-      'en-us', 'en-au', 'en-ca', 'en-gb', 'en-hk', 'en-ie', 'en-in', 'en-my', 'en-nz', 'en-ph', 'en-sg', 'en-za', 'es-es',
-      'es-mx', 'fr-be', 'fr-ca', 'fr-fr', 'it-it', 'ko-kr', 'pt-br', 'de-de', 'ar-sa', 'da-dk', 'fi-fi', 'ja-jp', 'nb-no', 
-      'nl-be', 'nl-nl', 'zh-cn'
+    'en-us', 'en-au', 'en-ca', 'en-gb', 'en-hk', 'en-ie', 'en-in', 'en-my', 'en-nz', 'en-ph', 'en-sg', 'en-za', 'es-es',
+    'es-mx', 'fr-be', 'fr-ca', 'fr-fr', 'it-it', 'ko-kr', 'pt-br', 'de-de', 'ar-sa', 'da-dk', 'fi-fi', 'ja-jp', 'nb-no',
+    'nl-be', 'nl-nl', 'zh-cn'
   ];
   for (const language of localLanguageList) {
-      if (url.includes(language)) {
-          return language;
-      }
+    if (url.includes(language)) {
+      return language;
+    }
   }
   return 'unknown';
 }
 
 function highlightPercent20(url) {
-return url.replace(/%20/g, '<span style="color: red;">%20</span>');
+  return url.replace(/%20/g, '<span style="color: red;">%20</span>');
 }
 
 async function checkLinks(checkAllLinks, checkBrokenLinks, checkLocalLanguageLinks, checkAllDetails) {
@@ -166,26 +204,33 @@ async function checkLinks(checkAllLinks, checkBrokenLinks, checkLocalLanguageLin
   const brokenLinks = [];
   const localLanguageLinks = [];
   const localLanguageList = [
-  'en-us','en-au','en-ca','en-gb','en-hk','en-ie','en-in','en-my','en-nz','en-ph','en-sg','en-za','es-es',
-  'es-mx','fr-be','fr-ca','fr-fr','it-it','ko-kr','pt-br','de-de','ar-sa','da-dk','fi-fi','ja-jp','ja-jp',
-  'nb-no','nl-be','nl-nl','zh-ch'];
+    'en-us', 'en-au', 'en-ca', 'en-gb', 'en-hk', 'en-ie', 'en-in', 'en-my', 'en-nz', 'en-ph', 'en-sg', 'en-za', 'es-es',
+    'es-mx', 'fr-be', 'fr-ca', 'fr-fr', 'it-it', 'ko-kr', 'pt-br', 'de-de', 'ar-sa', 'da-dk', 'fi-fi', 'ja-jp', 'nb-no',
+    'nl-be', 'nl-nl', 'zh-cn'
+  ];
 
   const links = Array.from(document.querySelectorAll('a')).map(link => link.href);
-  
+
   for (const url of links) {
     try {
       const response = await fetch(url);
       const status = response.status;
+
       if (checkAllLinks || checkAllDetails) allLinks.push({ url, status });
-      if ((checkBrokenLinks || checkAllDetails) && (status == 400 || status == 404 || status==410 || url.includes('%20'))) brokenLinks.push({ url, status });
+
+      if ((checkBrokenLinks || checkAllDetails) && (status === 400 || status === 404 || status === 410 || status === 502 || status === 408 || status === 503 || url.includes('%20'))) {
+        brokenLinks.push({ url, status });
+      }
+
       if ((checkLocalLanguageLinks || checkAllDetails) && localLanguageList.some(language => url.includes(language))) {
         localLanguageLinks.push({ url });
       }
     } catch (error) {
-      if (checkBrokenLinks || checkAllDetails) brokenLinks.push({ url, status: 'error' });
+      console.log(error)
     }
   }
 
   return { allLinks, brokenLinks, localLanguageLinks };
 }
-  
+
+
