@@ -9,7 +9,40 @@ document.getElementById('doneButton').addEventListener('click', async () => {
     const checkBrokenLinks = document.getElementById('checkBrokenLinks').checked;
     const checkLocalLanguageLinks = document.getElementById('checkLocalLanguageLinks').checked;
     const checkAllDetails = document.getElementById('checkAllDetails').checked;
-  
+
+    if (!checkAllLinks && !checkBrokenLinks && !checkLocalLanguageLinks && !checkAllDetails) {
+      alert('Please select at least one checkbox to continue.');
+      return;
+    }
+    
+  // let countdownTime = 10000; // Set countdown time in seconds
+  // const countdownElement = document.getElementById('countdown');
+  // countdownElement.textContent = `Estimate time: ${countdownTime} seconds`;
+
+  // const countdownInterval = setInterval(() => {
+  //   countdownTime -= 1;
+  //   countdownElement.textContent = `Time remaining: ${countdownTime} seconds`;
+
+  //   if (countdownTime <= 0) {
+  //     clearInterval(countdownInterval);
+  //   }
+  // }, 1000);
+
+  let countdownTime = 300; // Set countdown time in seconds (5 minutes)
+  const countdownElement = document.getElementById('countdown');
+  countdownElement.style.display = 'block'; // Ensure countdown element is visible
+  updateCountdown(countdownElement, countdownTime);
+
+  const countdownInterval = setInterval(() => {
+    countdownTime -= 1;
+    updateCountdown(countdownElement, countdownTime);
+
+    if (countdownTime <= 0) {
+      clearInterval(countdownInterval);
+      countdownElement.textContent = 'Time is up!';
+    }
+  }, 1000);
+
     try {
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -19,12 +52,23 @@ document.getElementById('doneButton').addEventListener('click', async () => {
   
       // Store results in localStorage for later use by the preview button
       localStorage.setItem('linkResults', JSON.stringify(results[0].result));
+      clearInterval(countdownInterval);
+      countdownElement.textContent= 'Loading compeleted now you can download your files'
       alert('Completed');
     } catch (error) {
+      clearInterval(countdownInterval);
+      countdownElement.textContent='';
       console.error(error);
       alert('An error occurred while checking links.');
     }
   });
+
+  function updateCountdown(element, time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    element.textContent = `Time remaining: ${minutes}m ${seconds}s`;
+  }
+  
   
   document.getElementById('previewButton').addEventListener('click', () => {
     const results = JSON.parse(localStorage.getItem('linkResults'));
