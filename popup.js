@@ -129,18 +129,15 @@ function highlightPercent20(url) {
     const links = Array.from(document.querySelectorAll('a')).map(link => link.href);
     
     for (const url of links) {
-      try {
+     
         const response = await fetch(url);
         const status = response.status;
         if (checkAllLinks || checkAllDetails) allLinks.push({ url, status });
-        if ((checkBrokenLinks || checkAllDetails) && (status == 400 || status == 404 || status==410 || url.includes('%20'))) brokenLinks.push({ url, status });
+        if ((checkBrokenLinks || checkAllDetails) && (status === 400 || status === 404 || status === 410 || url.includes('%20'))) brokenLinks.push({ url, status });
         if ((checkLocalLanguageLinks || checkAllDetails) && localLanguageList.some(language => url.includes(language))) {
           localLanguageLinks.push({ url });
         }
-      } catch (error) {
-        if (checkBrokenLinks || checkAllDetails) brokenLinks.push({ url, status: 'error' });
-      }
-    }
+      } 
   
     return { allLinks, brokenLinks, localLanguageLinks };
   }
